@@ -175,7 +175,9 @@ function Index() {
     return sortAssignments(list);
   }, [assignments, filter, courseFilter]);
 
-  const activeCount = assignments.filter((a) => a.status !== "done").length;
+  const totalCount = assignments.length;
+  const doneCount = assignments.filter((a) => a.status === "done").length;
+  const activeCount = totalCount - doneCount;
   const overdueCount = assignments.filter((a) => isOverdue(a)).length;
   const dueThisWeek = assignments.filter((a) => {
     const d = daysUntilDue(a.dueDate);
@@ -267,9 +269,9 @@ function Index() {
         {/* Stats */}
         <div className="animate-rise mt-8 grid grid-cols-3 gap-3" style={{ animationDelay: "60ms" }}>
           {[
-            { label: "Active", value: activeCount },
-            { label: "Due this week", value: dueThisWeek },
-            { label: "Overdue", value: overdueCount, danger: overdueCount > 0 },
+            { label: "Total assignments", value: totalCount },
+            { label: "Incomplete", value: activeCount },
+            { label: "Complete", value: doneCount },
           ].map((s) => (
             <div key={s.label} className="card-shadow rounded-2xl bg-card p-4">
               <p
