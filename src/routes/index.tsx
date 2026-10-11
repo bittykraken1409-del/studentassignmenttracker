@@ -211,7 +211,7 @@ function Index() {
 
   return (
     <div className="paper-texture min-h-screen">
-      <div className="mx-auto max-w-3xl px-4 pb-24 pt-12 sm:pt-16">
+      <div className="mx-auto max-w-4xl px-4 pb-24 pt-12 sm:pt-16">
         {/* Header */}
         <header className="animate-rise flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -433,7 +433,7 @@ function Index() {
           <form
             onSubmit={save}
             onClick={(e) => e.stopPropagation()}
-            className="card-shadow animate-rise w-full max-w-md rounded-3xl bg-card p-6"
+            className="card-shadow animate-rise w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl bg-card p-6"
           >
             <div className="flex items-center justify-between">
               <h2 className="font-display text-xl font-semibold">
