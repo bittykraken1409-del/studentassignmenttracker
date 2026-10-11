@@ -20,7 +20,7 @@ export const PRIORITY_ORDER: Record<Priority, number> = {
 
 /** Days from today until due (negative = overdue). Uses local calendar days. */
 export function daysUntilDue(dueDate: string, now: Date = new Date()): number {
-  const [y, m, d] = dueDate.split("-").map(Number);
+  const [y = 0, m = 1, d = 1] = dueDate.split("-").map(Number);
   const due = new Date(y, m - 1, d);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return Math.round((due.getTime() - today.getTime()) / 86_400_000);
