@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MonthCalendar } from "@/components/MonthCalendar";
+import { DatesSection, NotesSection, StudySection } from "@/components/ExtraSections";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   BookOpen,
@@ -139,7 +140,7 @@ function Index() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
-  const [view, setView] = useState<"list" | "calendar">("list");
+  const [view, setView] = useState<"list" | "calendar" | "dates" | "notes" | "study">("list");
   const [theme, setTheme] = useState<string>(loadTheme);
   useEffect(() => {
     if (theme === "paper") {
@@ -303,16 +304,16 @@ function Index() {
           </p>
         </div>
 
-        <div className="mt-8 inline-flex rounded-full bg-secondary p-1">
-          {(["list", "calendar"] as const).map((v) => (
+        <div className="mt-8 inline-flex flex-wrap rounded-full bg-secondary p-1">
+          {([["list", "List"], ["calendar", "Calendar"], ["dates", "Important dates"], ["notes", "Notes & files"], ["study", "Flashcards & study"]] as const).map(([v, label]) => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 view === v ? "bg-card text-foreground card-shadow" : "text-muted-foreground"
               }`}
             >
-              {v}
+              {label}
             </button>
           ))}
         </div>
@@ -324,6 +325,9 @@ function Index() {
             onAddOnDate={(d) => openNew(d)}
           />
         )}
+        {view === "dates" && <DatesSection />}
+        {view === "notes" && <NotesSection />}
+        {view === "study" && <StudySection />}
 
         {view === "list" && (<>
         {/* Filters */}
