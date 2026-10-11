@@ -14,7 +14,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  daysUntilDue,
   dueLabel,
   filterAssignments,
   isOverdue,
@@ -54,6 +53,31 @@ export const Route = createFileRoute("/")({
 });
 
 const STORAGE_KEY = "studydesk-assignments-v1";
+const THEME_KEY = "studydesk-theme-v1";
+
+const THEMES: { id: string; label: string; swatch: string }[] = [
+  { id: "paper", label: "Paper", swatch: "#b5875a" },
+  { id: "ocean", label: "Ocean", swatch: "#3b6fd4" },
+  { id: "forest", label: "Forest", swatch: "#3d7a52" },
+  { id: "berry", label: "Berry", swatch: "#c2497a" },
+  { id: "grape", label: "Grape", swatch: "#8a5cc9" },
+  { id: "sunset", label: "Sunset", swatch: "#e0693a" },
+  { id: "rose", label: "Rose", swatch: "#d9536a" },
+  { id: "teal", label: "Teal", swatch: "#2a9d9d" },
+  { id: "midnight", label: "Midnight", swatch: "#5b6ee1" },
+  { id: "charcoal", label: "Charcoal", swatch: "#e8c15a" },
+  { id: "lavender", label: "Lavender", swatch: "#9a7bd8" },
+  { id: "mint", label: "Mint", swatch: "#3aa87c" },
+  { id: "slate", label: "Slate", swatch: "#64748b" },
+];
+
+function loadTheme(): string {
+  try {
+    return localStorage.getItem(THEME_KEY) ?? "paper";
+  } catch {
+    return "paper";
+  }
+}
 
 const PRIORITY_STYLES: Record<Priority, string> = {
   high: "bg-overdue/10 text-overdue",
@@ -116,6 +140,15 @@ function Index() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [view, setView] = useState<"list" | "calendar">("list");
+  const [theme, setTheme] = useState<string>(loadTheme);
+  useEffect(() => {
+    if (theme === "paper") {
+      delete document.documentElement.dataset["theme"];
+    } else {
+      document.documentElement.dataset["theme"] = theme;
+    }
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
   const [, setTick] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 60_000);
@@ -141,12 +174,9 @@ function Index() {
     return sortAssignments(list);
   }, [assignments, filter, courseFilter]);
 
-  const activeCount = assignments.filter((a) => a.status !== "done").length;
-  const overdueCount = assignments.filter((a) => isOverdue(a)).length;
-  const dueThisWeek = assignments.filter((a) => {
-    const d = daysUntilDue(a.dueDate);
-    return a.status !== "done" && d >= 0 && d <= 7;
-  }).length;
+  const totalCount = assignments.length;
+  const doneCount = assignments.filter((a) => a.status === "done").length;
+  const activeCount = totalCount - doneCount;
 
   function openNew(date?: string) {
     setEditingId(null);
@@ -233,19 +263,44 @@ function Index() {
         {/* Stats */}
         <div className="animate-rise mt-8 grid grid-cols-3 gap-3" style={{ animationDelay: "60ms" }}>
           {[
-            { label: "Active", value: activeCount },
-            { label: "Due this week", value: dueThisWeek },
-            { label: "Overdue", value: overdueCount, danger: overdueCount > 0 },
+            { label: "Total assignments", value: totalCount },
+            { label: "Incomplete", value: activeCount },
+            { label: "Complete", value: doneCount },
           ].map((s) => (
             <div key={s.label} className="card-shadow rounded-2xl bg-card p-4">
-              <p
-                className={`font-display text-3xl font-semibold ${s.danger ? "text-overdue" : ""}`}
-              >
+              <p className="font-display text-3xl font-semibold">
                 {s.value}
               </p>
               <p className="mt-1 text-xs font-medium text-muted-foreground">{s.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* App colour theme picker */}
+        <div
+          className="animate-rise card-shadow mt-8 rounded-2xl bg-card p-4"
+          style={{ animationDelay: "100ms" }}
+        >
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            App colour
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2.5">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTheme(t.id)}
+                aria-label={`${t.label} theme`}
+                title={t.label}
+                className={`size-9 rounded-full transition-transform hover:scale-110 ${
+                  theme === t.id ? "ring-2 ring-ring ring-offset-2 ring-offset-card" : ""
+                }`}
+                style={{ backgroundColor: t.swatch }}
+              />
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {THEMES.find((t) => t.id === theme)?.label} theme
+          </p>
         </div>
 
         <div className="mt-8 inline-flex rounded-full bg-secondary p-1">
