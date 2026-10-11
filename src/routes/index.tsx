@@ -178,11 +178,6 @@ function Index() {
   const totalCount = assignments.length;
   const doneCount = assignments.filter((a) => a.status === "done").length;
   const activeCount = totalCount - doneCount;
-  const overdueCount = assignments.filter((a) => isOverdue(a)).length;
-  const dueThisWeek = assignments.filter((a) => {
-    const d = daysUntilDue(a.dueDate);
-    return a.status !== "done" && d >= 0 && d <= 7;
-  }).length;
 
   function openNew(date?: string) {
     setEditingId(null);
