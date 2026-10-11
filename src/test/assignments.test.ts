@@ -75,3 +75,16 @@ describe("filterAssignments", () => {
     expect(filterAssignments(list, "done", NOW).map((a) => a.id)).toEqual(["done"]);
   });
 });
+
+import { formatDuration, timeLeftLabel } from "@/lib/assignments";
+describe("time helpers", () => {
+  it("formats estimated time", () => {
+    expect(formatDuration(90)).toBe("1h 30m");
+    expect(formatDuration(45)).toBe("45m");
+  });
+  it("shows time left until due", () => {
+    const a = { ...base, dueDate: "2026-10-12", dueTime: "12:00" };
+    expect(timeLeftLabel(a, new Date(2026, 9, 11, 10, 0))).toBe("1d 2h left");
+    expect(timeLeftLabel(a, new Date(2026, 9, 12, 13, 0))).toBe("1h 0m overdue");
+  });
+});
