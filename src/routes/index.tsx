@@ -54,6 +54,31 @@ export const Route = createFileRoute("/")({
 });
 
 const STORAGE_KEY = "studydesk-assignments-v1";
+const THEME_KEY = "studydesk-theme-v1";
+
+const THEMES: { id: string; label: string; swatch: string }[] = [
+  { id: "paper", label: "Paper", swatch: "#b5875a" },
+  { id: "ocean", label: "Ocean", swatch: "#3b6fd4" },
+  { id: "forest", label: "Forest", swatch: "#3d7a52" },
+  { id: "berry", label: "Berry", swatch: "#c2497a" },
+  { id: "grape", label: "Grape", swatch: "#8a5cc9" },
+  { id: "sunset", label: "Sunset", swatch: "#e0693a" },
+  { id: "rose", label: "Rose", swatch: "#d9536a" },
+  { id: "teal", label: "Teal", swatch: "#2a9d9d" },
+  { id: "midnight", label: "Midnight", swatch: "#5b6ee1" },
+  { id: "charcoal", label: "Charcoal", swatch: "#e8c15a" },
+  { id: "lavender", label: "Lavender", swatch: "#9a7bd8" },
+  { id: "mint", label: "Mint", swatch: "#3aa87c" },
+  { id: "slate", label: "Slate", swatch: "#64748b" },
+];
+
+function loadTheme(): string {
+  try {
+    return localStorage.getItem(THEME_KEY) ?? "paper";
+  } catch {
+    return "paper";
+  }
+}
 
 const PRIORITY_STYLES: Record<Priority, string> = {
   high: "bg-overdue/10 text-overdue",
@@ -116,6 +141,15 @@ function Index() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [view, setView] = useState<"list" | "calendar">("list");
+  const [theme, setTheme] = useState<string>(loadTheme);
+  useEffect(() => {
+    if (theme === "paper") {
+      delete document.documentElement.dataset.theme;
+    } else {
+      document.documentElement.dataset.theme = theme;
+    }
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
   const [, setTick] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 60_000);
