@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { MonthCalendar } from "@/components/MonthCalendar";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   BookOpen,
   CalendarDays,
   CheckCircle2,
+  Clock,
   Circle,
   Loader,
   Pencil,
@@ -17,6 +19,12 @@ import {
   filterAssignments,
   isOverdue,
   sortAssignments,
+  COLORS,
+  STATUS_LABEL,
+  TASK_TYPES,
+  formatDuration,
+  timeLeftLabel,
+  type TaskType,
   type Assignment,
   type Filter,
   type Priority,
@@ -80,6 +88,11 @@ interface Draft {
   dueDate: string;
   priority: Priority;
   notes: string;
+  type: TaskType;
+  estimatedMinutes: number;
+  color: string;
+  dueTime: string;
+  status: Status;
 }
 
 const EMPTY_DRAFT: Draft = {
@@ -88,6 +101,11 @@ const EMPTY_DRAFT: Draft = {
   dueDate: "",
   priority: "medium",
   notes: "",
+  type: "assignment",
+  estimatedMinutes: 60,
+  color: COLORS[4]!,
+  dueTime: "23:59",
+  status: "todo",
 };
 
 function Index() {
@@ -97,6 +115,16 @@ function Index() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
+  const [view, setView] = useState<"list" | "calendar">("list");
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  function setStatus(id: string, status: Status) {
+    setAssignments((list) => list.map((a) => (a.id === id ? { ...a, status } : a)));
+  }
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assignments));
@@ -120,9 +148,9 @@ function Index() {
     return a.status !== "done" && d >= 0 && d <= 7;
   }).length;
 
-  function openNew() {
+  function openNew(date?: string) {
     setEditingId(null);
-    setDraft(EMPTY_DRAFT);
+    setDraft({ ...EMPTY_DRAFT, dueDate: date ?? "" });
     setFormOpen(true);
   }
 
@@ -134,6 +162,11 @@ function Index() {
       dueDate: a.dueDate,
       priority: a.priority,
       notes: a.notes,
+      type: a.type ?? "assignment",
+      estimatedMinutes: a.estimatedMinutes ?? 0,
+      color: a.color ?? COLORS[4]!,
+      dueTime: a.dueTime ?? "23:59",
+      status: a.status,
     });
     setFormOpen(true);
   }
@@ -152,7 +185,6 @@ function Index() {
           id: crypto.randomUUID(),
           ...draft,
           title: draft.title.trim(),
-          status: "todo",
           createdAt: Date.now(),
         },
       ]);
@@ -191,7 +223,7 @@ function Index() {
             </h1>
           </div>
           <button
-            onClick={openNew}
+            onClick={() => openNew()}
             className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.03] active:scale-95"
           >
             <Plus className="size-4" /> New assignment
@@ -216,6 +248,29 @@ function Index() {
           ))}
         </div>
 
+        <div className="mt-8 inline-flex rounded-full bg-secondary p-1">
+          {(["list", "calendar"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
+                view === v ? "bg-card text-foreground card-shadow" : "text-muted-foreground"
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+
+        {view === "calendar" && (
+          <MonthCalendar
+            assignments={assignments}
+            onSelect={openEdit}
+            onAddOnDate={(d) => openNew(d)}
+          />
+        )}
+
+        {view === "list" && (<>
         {/* Filters */}
         <div
           className="animate-rise mt-8 flex flex-wrap items-center gap-2"
@@ -259,8 +314,8 @@ function Index() {
             return (
               <li
                 key={a.id}
-                className="card-shadow animate-rise group rounded-2xl bg-card p-4 sm:p-5"
-                style={{ animationDelay: `${Math.min(i * 40, 300)}ms` }}
+                className="card-shadow animate-rise group rounded-2xl border-l-[6px] bg-card p-4 sm:p-5"
+                style={{ animationDelay: `${Math.min(i * 40, 300)}ms`, borderLeftColor: a.color ?? COLORS[4] }}
               >
                 <div className="flex items-start gap-3">
                   <button
@@ -288,6 +343,9 @@ function Index() {
                       >
                         {a.priority}
                       </span>
+                      <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
+                        {TASK_TYPES.find((t) => t.value === (a.type ?? "assignment"))?.label}
+                      </span>
                     </div>
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                       {a.course && (
@@ -306,8 +364,24 @@ function Index() {
                           day: "numeric",
                         })}
                         {" · "}
-                        {dueLabel(a)}
+                        {a.dueTime && a.dueTime !== "23:59" ? `${a.dueTime} · ` : ""}
+                        {a.status === "done" ? dueLabel(a) : timeLeftLabel(a)}
                       </span>
+                      {!!a.estimatedMinutes && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Clock className="size-3.5" /> ~{formatDuration(a.estimatedMinutes)}
+                        </span>
+                      )}
+                      <select
+                        value={a.status}
+                        onChange={(e) => setStatus(a.id, e.target.value as Status)}
+                        aria-label="Status"
+                        className="rounded-full border border-input bg-background px-2 py-0.5 text-xs font-medium text-foreground outline-none"
+                      >
+                        {(Object.keys(STATUS_LABEL) as Status[]).map((st) => (
+                          <option key={st} value={st}>{STATUS_LABEL[st]}</option>
+                        ))}
+                      </select>
                     </div>
                     {a.notes && (
                       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -315,7 +389,7 @@ function Index() {
                       </p>
                     )}
                   </div>
-                  <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="flex shrink-0 gap-1 opacity-60 transition-opacity group-hover:opacity-100">
                     <button
                       onClick={() => openEdit(a)}
                       aria-label={`Edit ${a.title}`}
@@ -347,6 +421,7 @@ function Index() {
             </p>
           </div>
         )}
+        </>)}
       </div>
 
       {/* Form modal */}
@@ -413,6 +488,59 @@ function Index() {
                     onChange={(e) => setDraft({ ...draft, dueDate: e.target.value })}
                     className="mt-1.5 w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
                   />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="dueTime" className="text-sm font-medium">Due time</label>
+                  <input id="dueTime" type="time" value={draft.dueTime}
+                    onChange={(e) => setDraft({ ...draft, dueTime: e.target.value })}
+                    className="mt-1.5 w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+                <div>
+                  <label htmlFor="type" className="text-sm font-medium">Type of task</label>
+                  <select id="type" value={draft.type}
+                    onChange={(e) => setDraft({ ...draft, type: e.target.value as TaskType })}
+                    className="mt-1.5 w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring">
+                    {TASK_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium">Estimated time</label>
+                  <div className="mt-1.5 flex gap-2">
+                    <input aria-label="Hours" type="number" min={0} value={Math.floor(draft.estimatedMinutes / 60)}
+                      onChange={(e) => setDraft({ ...draft, estimatedMinutes: Math.max(0, Number(e.target.value) || 0) * 60 + (draft.estimatedMinutes % 60) })}
+                      className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none" />
+                    <span className="self-center text-xs text-muted-foreground">h</span>
+                    <input aria-label="Minutes" type="number" min={0} max={59} step={5} value={draft.estimatedMinutes % 60}
+                      onChange={(e) => setDraft({ ...draft, estimatedMinutes: Math.floor(draft.estimatedMinutes / 60) * 60 + Math.min(59, Math.max(0, Number(e.target.value) || 0)) })}
+                      className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none" />
+                    <span className="self-center text-xs text-muted-foreground">m</span>
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="status" className="text-sm font-medium">Status</label>
+                  <select id="status" value={draft.status}
+                    onChange={(e) => setDraft({ ...draft, status: e.target.value as Status })}
+                    className="mt-1.5 w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring">
+                    {(Object.keys(STATUS_LABEL) as Status[]).map((st) => <option key={st} value={st}>{STATUS_LABEL[st]}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <span className="text-sm font-medium">Colour</span>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  {COLORS.map((c) => (
+                    <button key={c} type="button" aria-label={`Colour ${c}`}
+                      onClick={() => setDraft({ ...draft, color: c })}
+                      className={`size-8 rounded-full transition-transform ${draft.color === c ? "scale-110 ring-2 ring-ring ring-offset-2 ring-offset-card" : ""}`}
+                      style={{ backgroundColor: c }} />
+                  ))}
+                  <input type="color" aria-label="Custom colour" value={draft.color}
+                    onChange={(e) => setDraft({ ...draft, color: e.target.value })}
+                    className="size-8 cursor-pointer rounded-full border border-input bg-transparent" />
                 </div>
               </div>
               <div>
