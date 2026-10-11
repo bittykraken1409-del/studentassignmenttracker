@@ -284,6 +284,33 @@ function Index() {
           ))}
         </div>
 
+        {/* App colour theme picker */}
+        <div
+          className="animate-rise card-shadow mt-8 rounded-2xl bg-card p-4"
+          style={{ animationDelay: "100ms" }}
+        >
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            App colour
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2.5">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTheme(t.id)}
+                aria-label={`${t.label} theme`}
+                title={t.label}
+                className={`size-9 rounded-full transition-transform hover:scale-110 ${
+                  theme === t.id ? "ring-2 ring-ring ring-offset-2 ring-offset-card" : ""
+                }`}
+                style={{ backgroundColor: t.swatch }}
+              />
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {THEMES.find((t) => t.id === theme)?.label} theme
+          </p>
+        </div>
+
         <div className="mt-8 inline-flex rounded-full bg-secondary p-1">
           {(["list", "calendar"] as const).map((v) => (
             <button
