@@ -14,7 +14,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  daysUntilDue,
   dueLabel,
   filterAssignments,
   isOverdue,
@@ -144,9 +143,9 @@ function Index() {
   const [theme, setTheme] = useState<string>(loadTheme);
   useEffect(() => {
     if (theme === "paper") {
-      delete document.documentElement.dataset.theme;
+      delete document.documentElement.dataset["theme"];
     } else {
-      document.documentElement.dataset.theme = theme;
+      document.documentElement.dataset["theme"] = theme;
     }
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
@@ -269,9 +268,7 @@ function Index() {
             { label: "Complete", value: doneCount },
           ].map((s) => (
             <div key={s.label} className="card-shadow rounded-2xl bg-card p-4">
-              <p
-                className={`font-display text-3xl font-semibold ${s.danger ? "text-overdue" : ""}`}
-              >
+              <p className="font-display text-3xl font-semibold">
                 {s.value}
               </p>
               <p className="mt-1 text-xs font-medium text-muted-foreground">{s.label}</p>
